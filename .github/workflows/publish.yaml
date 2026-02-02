@@ -1,0 +1,38 @@
+name: Publish
+
+on:
+  push:
+    branches:
+    - main
+    paths:
+    - apps/cli/**
+    - packages/core/**
+    - packages/schema/**
+    - .github/workflows/publish.yaml
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v5
+
+    - name: Setup
+      uses: ./.github/actions/setup
+
+    - name: Create Release Pull Request
+      id: changesets
+      uses: changesets/action@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Publish to npm
+      if: steps.changesets.outputs.hasChangesets == 'false'
+      run: |
+        yarn config set npmAuthToken ${NPM_TOKEN}
+        yarn release
+      env:
+        NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
