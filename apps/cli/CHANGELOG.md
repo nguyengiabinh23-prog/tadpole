@@ -1,5 +1,16 @@
 # @tadpolehq/cli
 
+## 0.1.3
+
+### Patch Changes
+
+- 9e09047: - Fix for_each: Used wrong value for remoteObjectId, ensure object isn't a primitive
+  - Fix withPrefix: Do not append an extra `.`
+  - Add stepPrecision to natural mouse Scroll
+  - Fix hover: dom.getBoxModel returns a relative position, not absolute
+- Updated dependencies [9e09047]
+  - @tadpolehq/core@0.1.3
+
 ## 0.1.2
 
 ### Patch Changes
