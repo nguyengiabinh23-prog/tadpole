@@ -342,9 +342,11 @@ export class DOMForEach implements IAction<SessionContext> {
     }>('Runtime.getProperties', params);
 
     for (const prop of result) {
-      if (!prop.value || prop.name === 'length') continue;
+      if (isNaN(Number(prop.name))) continue;
 
-      ctx.session.pushNode(new Node({ remoteObjectId: prop.name }));
+      if (!prop.value?.objectId) continue;
+
+      ctx.session.pushNode(new Node({ remoteObjectId: prop.value.objectId }));
       try {
         for (const action of this.params_.execute) {
           await action.execute(ctx);
