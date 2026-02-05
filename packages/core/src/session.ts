@@ -76,6 +76,10 @@ export class Session {
     );
   }
 
+  on<T>(eventName: string, handler: (data: T) => void): () => void {
+    return this.browser_.on(eventName, handler);
+  }
+
   get mousePosition(): MousePosition {
     return this.mousePosition_;
   }

@@ -132,6 +132,11 @@ export class Browser {
     });
   }
 
+  on<T>(eventName: string, handler: (data: T) => void): () => void {
+    this.eventEmitter_.on(eventName, handler);
+    return () => this.eventEmitter_.off(eventName, handler);
+  }
+
   private onMessage_(data: Buffer) {
     const res = JSON.parse(data.toString());
 

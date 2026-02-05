@@ -3,6 +3,7 @@ import { SessionActionRegistry, type IAction } from './base.js';
 import { Goto, GotoOptions } from './page.js';
 import type { BrowserContext } from '../context.js';
 import { Session } from '../session.js';
+import type { Page } from '../types/index.js';
 
 export const BaseNewPageSchema = ts.node({
   args: ts.args([ts.expression(ts.string())]),
@@ -55,6 +56,15 @@ export class NewPage implements IAction<BrowserContext> {
     await pageSession.send('Page.enable');
     await pageSession.send('Page.setLifecycleEventsEnabled', { enabled: true });
 
+    const cleanupFrameListener = pageSession.on<{ frame: Page.Frame }>(
+      'Page.frameNavigated',
+      ({ frame }) => {
+        if (frame.id === pageSession.mainFrameId) {
+          pageSession.currentLoaderId = frame.loaderId;
+        }
+      },
+    );
+
     const pageCtx = {
       $: ctx.$,
       session: pageSession,
@@ -70,6 +80,7 @@ export class NewPage implements IAction<BrowserContext> {
         await action.execute(pageCtx);
       }
     } finally {
+      cleanupFrameListener();
       const disposeBrowserContextParams = { browserContextId };
       ctx.$.log.debug(
         `Calling 'Target.disposeBrowserContext' with params=${JSON.stringify(disposeBrowserContextParams)}`,

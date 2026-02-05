@@ -1,12 +1,11 @@
 module airbnb {
   browser_action open {
     new_page "https://airbnb.com" {
-      wait_until "networkAlmostIdle"
       parallel {
         airbnb.maybe_close_dialog
         wait_for { $ "#bigsearch-query-location-input"; as_boolean }
       }
-      mouse.natural_move "=jitter(25, 10)" "=jitter(30, 20)"
+      mouse.natural_move "=jitter(25, 15)" "=jitter(35, 10)"
       slot
     }
   }
@@ -27,8 +26,9 @@ module airbnb {
     maybe {
       wait_for { $ "div[role='dialog']"; as_boolean }
       log "Found dialog, closing..."
-      sleep 2500
+      sleep "=random() * 2000"
       $ "div[role='dialog'] button" { click }
+      log "Closed"
     }
   }
 

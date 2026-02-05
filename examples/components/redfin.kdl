@@ -1,4 +1,9 @@
 module redfin {
+  browser_action open {
+    new_page "https://redfin.com" {
+      slot
+    }
+  }
   action search {
     $ "#search-box-input" {
       type "=text"
