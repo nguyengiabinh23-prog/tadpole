@@ -3,8 +3,13 @@ module hello {
     $ "#mp-tfa"
     text
   }
+
+  browser_action open {
+    new_page "https://en.wikipedia.org" {
+      slot
+    }
+  }
   action extract_article {
-    goto "https://en.wikipedia.org"
     extract data {
       article {
         hello.get_article_text

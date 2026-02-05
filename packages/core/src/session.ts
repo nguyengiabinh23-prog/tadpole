@@ -1,10 +1,13 @@
 import type { Browser } from './browser.js';
-import type { Node } from './node.js';
+import { ILogger } from './logger.js';
+import { Node } from './node.js';
+import type { Runtime } from './types/index.js';
 import type { Value } from './values.js';
 
 export interface SessionParams {
   id: string;
   browser: Browser;
+  logger: ILogger;
 }
 
 export interface MousePosition {
@@ -17,12 +20,16 @@ export class Session {
   private browser_: Browser;
   private nodeStack_: Node[];
   private mousePosition_: MousePosition;
+  private logger_: ILogger;
+  private mainFrameId_?: string;
+  private currentLoaderId_?: string;
 
-  constructor({ id, browser }: SessionParams) {
+  constructor({ id, browser, logger }: SessionParams) {
     this.id_ = id;
     this.browser_ = browser;
     this.nodeStack_ = [];
     this.mousePosition_ = { x: 0, y: 0 };
+    this.logger_ = logger;
   }
 
   get id(): string {
@@ -33,6 +40,22 @@ export class Session {
     return this.browser_;
   }
 
+  get mainFrameId(): string | undefined {
+    return this.mainFrameId_;
+  }
+
+  set mainFrameId(frameId: string) {
+    this.mainFrameId_ = frameId;
+  }
+
+  get currentLoaderId(): string | undefined {
+    return this.currentLoaderId_;
+  }
+
+  set currentLoaderId(loaderId: string | undefined) {
+    this.currentLoaderId_ = loaderId;
+  }
+
   send<T>(method: string, params?: Record<string, Value>): Promise<T> {
     return this.browser_.send<T>({
       method,
@@ -41,8 +64,20 @@ export class Session {
     });
   }
 
-  waitFor<T>(eventName: string, timeout: number): Promise<T> {
-    return this.browser_.waitFor(`${eventName}.${this.id_}`, timeout);
+  waitFor<T>(
+    eventName: string,
+    timeout: number,
+    predicate?: (data: T) => boolean,
+  ): Promise<T> {
+    return this.browser_.waitFor(
+      `${eventName}.${this.id_}`,
+      timeout,
+      predicate,
+    );
+  }
+
+  on<T>(eventName: string, handler: (data: T) => void): () => void {
+    return this.browser_.on(eventName, handler);
   }
 
   get mousePosition(): MousePosition {
@@ -53,7 +88,7 @@ export class Session {
     this.mousePosition_ = newPosition;
   }
 
-  get activeNode(): Node | null {
+  private get activeNode_(): Node | null {
     return this.nodeStack_.at(-1) ?? null;
   }
 
@@ -63,5 +98,61 @@ export class Session {
 
   popActiveNode(): Node | undefined {
     return this.nodeStack_.pop();
+  }
+
+  async activeNode(): Promise<Node> {
+    let node = this.activeNode_;
+    if (node === null) {
+      this.logger_.debug(
+        "No node active in context, calling 'Runtime.evaluate' to fetch 'document'",
+      );
+      const { result } = await this.send<{ result: Runtime.RemoteObject }>(
+        'Runtime.evaluate',
+        {
+          expression: 'document',
+        },
+      );
+
+      node = new Node({ remoteObjectId: result.objectId! });
+      this.nodeStack_.push(node);
+    }
+
+    this.logger_.debug(`Using context objectId=${node.remoteObjectId}`);
+    return node;
+  }
+
+  async callFunctionOn(
+    functionDeclaration: string,
+    objectId: Runtime.RemoteObjectId,
+    params?: Record<string, Value>,
+  ): Promise<Runtime.RemoteObject> {
+    params = { ...params, objectId, functionDeclaration };
+    this.logger_.debug(
+      `Calling 'Runtime.callFunctionOn' with params=${JSON.stringify(params)}`,
+    );
+    const { result, exceptionDetails } = await this.send<{
+      result: Runtime.RemoteObject;
+      exceptionDetails?: Runtime.ExceptionDetails;
+    }>('Runtime.callFunctionOn', params);
+
+    if (exceptionDetails) {
+      throw new Error(
+        `Encountered error running JavaScript ${functionDeclaration}: ${exceptionDetails.text}`,
+      );
+    }
+
+    return result;
+  }
+
+  async callFunctionOnActiveNode(
+    functionDeclaration: string,
+    params?: Record<string, Value>,
+  ): Promise<Runtime.RemoteObject> {
+    const activeNode = await this.activeNode();
+    return await this.callFunctionOn(
+      functionDeclaration,
+      activeNode.remoteObjectId,
+      params,
+    );
   }
 }

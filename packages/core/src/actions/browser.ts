@@ -1,65 +1,69 @@
 import * as ts from '@tadpolehq/schema';
 import { SessionActionRegistry, type IAction } from './base.js';
+import { Goto, GotoOptions } from './page.js';
 import type { BrowserContext } from '../context.js';
 import { Session } from '../session.js';
+import type { Page } from '../types/index.js';
 
-export const BaseBrowserNewPageSchema = ts.node({
+export const BaseNewPageSchema = ts.node({
+  args: ts.args([ts.expression(ts.string())]),
+  options: GotoOptions,
   execute: ts.slot(ts.children(ts.anyOf(SessionActionRegistry))),
 });
 
-export type BrowserNewPageParams = ts.output<typeof BaseBrowserNewPageSchema>;
+export type NewPageParams = ts.output<typeof BaseNewPageSchema>;
 
-export const BrowserNewPageParser = ts.into(
-  BaseBrowserNewPageSchema,
-  (v): IAction<BrowserContext> => new BrowserNewPage(v),
+export const NewPageParser = ts.into(
+  BaseNewPageSchema,
+  (v): IAction<BrowserContext> => new NewPage(v),
 );
 
-export class BrowserNewPage implements IAction<BrowserContext> {
-  constructor(private params_: BrowserNewPageParams) {}
+export class NewPage implements IAction<BrowserContext> {
+  private goto_: Goto;
+
+  constructor(private params_: NewPageParams) {
+    this.goto_ = new Goto({
+      args: this.params_.args,
+      options: this.params_.options,
+    });
+  }
 
   async execute(ctx: BrowserContext) {
-    ctx.$.log.debug("Calling 'Target.createBrowserContext'");
     const { browserContextId } = await ctx.browser.send<{
       browserContextId: string;
     }>({
       method: 'Target.createBrowserContext',
     });
-    ctx.$.log.debug(`Created new browser context with id=${browserContextId}`);
-
     const createTargetParams = { url: '', browserContextId };
-    ctx.$.log.debug(
-      `Calling 'Target.createTarget' with params ${JSON.stringify(
-        createTargetParams,
-      )}`,
-    );
     const { targetId } = await ctx.browser.send<{ targetId: string }>({
       method: 'Target.createTarget',
       params: createTargetParams,
     });
-    ctx.$.log.debug(`Created new target with id=${targetId}`);
-
     const attachToTargetParams = {
       targetId,
       flatten: true,
     };
-    ctx.$.log.debug(
-      `Calling 'Target.attachToTarget' with params ${JSON.stringify(
-        attachToTargetParams,
-      )}`,
-    );
     const { sessionId } = await ctx.browser.send<{ sessionId: string }>({
       method: 'Target.attachToTarget',
       params: attachToTargetParams,
     });
-    ctx.$.log.debug(`Created new session with id=${sessionId}`);
-
     const pageSession = new Session({
       id: sessionId,
       browser: ctx.browser,
+      logger: ctx.$.log.child({ sessionId }),
     });
 
-    ctx.$.log.debug("Calling 'Page.enable'");
     await pageSession.send('Page.enable');
+    await pageSession.send('Page.setLifecycleEventsEnabled', { enabled: true });
+
+    const cleanupFrameListener = pageSession.on<{ frame: Page.Frame }>(
+      'Page.frameNavigated',
+      ({ frame }) => {
+        if (frame.id === pageSession.mainFrameId) {
+          pageSession.currentLoaderId = frame.loaderId;
+        }
+      },
+    );
 
     const pageCtx = {
       $: ctx.$,
@@ -69,11 +73,14 @@ export class BrowserNewPage implements IAction<BrowserContext> {
       },
     };
 
+    await this.goto_.execute(pageCtx);
+
     try {
       for (const action of this.params_.execute) {
         await action.execute(pageCtx);
       }
     } finally {
+      cleanupFrameListener();
       const disposeBrowserContextParams = { browserContextId };
       ctx.$.log.debug(
         `Calling 'Target.disposeBrowserContext' with params=${JSON.stringify(disposeBrowserContextParams)}`,
