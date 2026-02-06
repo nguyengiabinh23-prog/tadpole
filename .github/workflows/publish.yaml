@@ -8,6 +8,7 @@ on:
     - apps/cli/**
     - packages/core/**
     - packages/schema/**
+    - .changeset/**
     - .github/workflows/publish.yaml
 
 jobs:
@@ -23,11 +24,6 @@ jobs:
     - name: Setup
       uses: ./.github/actions/setup
 
-    - name: Configure npmAuthToken
-      run: yarn config set npmAuthToken ${NPM_TOKEN}
-      env:
-        NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-
     - name: Create Release Pull Request or Publish to npm
       id: changesets
       uses: changesets/action@v1
@@ -35,3 +31,4 @@ jobs:
         publish: yarn release
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        NPM_AUTH_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
