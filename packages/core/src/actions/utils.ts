@@ -1,6 +1,8 @@
 import * as ts from '@tadpolehq/schema';
+import { writeFile } from 'node:fs/promises';
 import type { IAction } from './base.js';
-import type { BrowserContext } from '../context.js';
+import type { BrowserContext, SessionContext } from '../context.js';
+import type { Page } from '../types/index.js';
 
 export const LogLevel = ts.enum(['debug', 'info', 'warn', 'error']);
 
@@ -24,6 +26,74 @@ export class Log implements IAction<BrowserContext> {
   async execute(ctx: BrowserContext): Promise<void> {
     const message = this.params_.args[0].resolve(ctx.$.expressionContext);
     ctx.$.log[this.params_.options.level](message);
+  }
+}
+
+export const BaseViewportSchema = ts.properties({
+  x: ts.optional(ts.number()),
+  y: ts.optional(ts.number()),
+  width: ts.optional(ts.number()),
+  height: ts.optional(ts.number()),
+  scale: ts.optional(ts.number()),
+});
+
+export const createViewportSchema = (prefix?: string) =>
+  ts.into(
+    BaseViewportSchema.prefix(prefix),
+    (v): (Page.Viewport & Record<string, ts.Value>) | undefined => {
+      const hasValues = Object.values(v).some((val) => val !== undefined);
+      if (hasValues) {
+        return {
+          x: v.x ?? 0,
+          y: v.y ?? 0,
+          width: v.width ?? 1280,
+          height: v.height ?? 720,
+          scale: v.scale ?? 1,
+        };
+      }
+      return undefined;
+    },
+  );
+
+export const ScreenshotFormat = ts.enum(['jpeg', 'png', 'webp']);
+
+export const ScreenshotOptionsSchema = ts.properties({
+  format: ts.default(ScreenshotFormat, 'png'),
+  quality: ts.optional(ts.number().gte(0).lte(100)),
+});
+
+export const BaseScreenshotSchema = ts.node({
+  args: ts.args([ts.expression(ts.string())]),
+  options: ScreenshotOptionsSchema,
+  clip: createViewportSchema('clip.'),
+});
+
+export type ScreenshotParams = ts.output<typeof BaseScreenshotSchema>;
+
+export const ScreenshotParser = ts.into(
+  BaseScreenshotSchema,
+  (v): IAction<SessionContext> => new Screenshot(v),
+);
+
+export class Screenshot implements IAction<SessionContext> {
+  constructor(private params_: ScreenshotParams) {}
+
+  async execute(ctx: SessionContext): Promise<void> {
+    let savePath = this.params_.args[0].resolve(ctx.$.expressionContext);
+    if (!savePath.endsWith(this.params_.options.format)) {
+      savePath = `${savePath}.${this.params_.options.format}`;
+    }
+
+    const params = {
+      format: this.params_.options.format,
+      quality: this.params_.options.quality,
+      clip: this.params_.clip,
+    };
+    const { data } = await ctx.session.send<{ data: string }>(
+      'Page.captureScreenshot',
+      params,
+    );
+    await writeFile(savePath, Buffer.from(data, 'base64'));
   }
 }
 

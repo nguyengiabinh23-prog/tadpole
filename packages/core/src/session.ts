@@ -77,7 +77,7 @@ export class Session {
   }
 
   on<T>(eventName: string, handler: (data: T) => void): () => void {
-    return this.browser_.on(eventName, handler);
+    return this.browser_.on(`${eventName}.${this.id_}`, handler);
   }
 
   get mousePosition(): MousePosition {
@@ -98,6 +98,10 @@ export class Session {
 
   popActiveNode(): Node | undefined {
     return this.nodeStack_.pop();
+  }
+
+  clearNodeStack() {
+    this.nodeStack_ = [];
   }
 
   async activeNode(): Promise<Node> {
@@ -127,9 +131,6 @@ export class Session {
     params?: Record<string, Value>,
   ): Promise<Runtime.RemoteObject> {
     params = { ...params, objectId, functionDeclaration };
-    this.logger_.debug(
-      `Calling 'Runtime.callFunctionOn' with params=${JSON.stringify(params)}`,
-    );
     const { result, exceptionDetails } = await this.send<{
       result: Runtime.RemoteObject;
       exceptionDetails?: Runtime.ExceptionDetails;
