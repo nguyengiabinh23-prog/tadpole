@@ -111,7 +111,7 @@ export class Session {
   }
 
   async activeNode(): Promise<Node> {
-    let node = this.activeNode_;
+    const node = this.activeNode_;
     if (node !== null) {
       this.logger_.debug(`Using context objectId=${node.remoteObjectId}`);
       return node;

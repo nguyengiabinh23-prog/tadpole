@@ -55,7 +55,7 @@ export class Filter implements IAction<SessionContext> {
           objectId: result.objectId,
         });
       } catch (err) {
-        ctx.$.log.warn(`Error releasing objectId=${result.objectId}`);
+        ctx.$.log.warn(`Error releasing objectId=${result.objectId}: ${err}`);
       }
     }
   }
