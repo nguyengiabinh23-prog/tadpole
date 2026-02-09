@@ -145,11 +145,11 @@ export async function applyUAOverride(
 }
 
 export const ApplyIdentityOptionsSchema = ts.properties({
-  limit: ts.default(ts.number(), 10),
+  limit: ts.expression(ts.default(ts.number(), 10)),
 });
 
 export const BaseApplyIdentitySchema = ts.node({
-  args: ts.args([PlatformSchema]),
+  args: ts.args([ts.expression(PlatformSchema)]),
   options: ApplyIdentityOptionsSchema,
 });
 
@@ -165,8 +165,8 @@ export class ApplyIdentity implements IAction<SessionContext> {
 
   async execute(ctx: SessionContext) {
     const [userAgent, platform, userAgentMetadata] = await generateIdentityFor(
-      this.params_.args[0],
-      this.params_.options.limit,
+      this.params_.args[0].resolve(ctx.$.expressionContext),
+      this.params_.options.limit.resolve(ctx.$.expressionContext),
     );
     await applyUAOverride(ctx, userAgent, platform, userAgentMetadata);
   }
@@ -230,12 +230,12 @@ export class SetHardwareConcurrency implements IAction<SessionContext> {
 }
 
 export const SetViewportOptions = ts.properties({
-  width: ts.number(),
-  height: ts.number(),
-  deviceScaleFactor: ts.default(ts.number(), 1),
-  mobile: ts.default(ts.boolean(), false),
-  screenWidth: ts.optional(ts.number()),
-  screenHeight: ts.optional(ts.number()),
+  width: ts.expression(ts.number()),
+  height: ts.expression(ts.number()),
+  deviceScaleFactor: ts.expression(ts.default(ts.number(), 1)),
+  mobile: ts.expression(ts.default(ts.boolean(), false)),
+  screenWidth: ts.expression(ts.optional(ts.number())),
+  screenHeight: ts.expression(ts.optional(ts.number())),
 });
 
 export const BaseSetViewportSchema = ts.node({
@@ -253,15 +253,67 @@ export class SetViewport implements IAction<SessionContext> {
   constructor(private params_: SetViewportParams) {}
 
   async execute(ctx: SessionContext) {
+    const width = this.params_.options.width.resolve(ctx.$.expressionContext);
+    const height = this.params_.options.height.resolve(ctx.$.expressionContext);
     await ctx.session.send('Emulation.setDeviceMetricsOverride', {
-      width: this.params_.options.width,
-      height: this.params_.options.height,
-      deviceScaleFactor: this.params_.options.deviceScaleFactor,
-      mobile: this.params_.options.mobile,
+      width,
+      height,
+      deviceScaleFactor: this.params_.options.deviceScaleFactor.resolve(
+        ctx.$.expressionContext,
+      ),
+      mobile: this.params_.options.mobile.resolve(ctx.$.expressionContext),
       screenWidth:
-        this.params_.options.screenWidth ?? this.params_.options.width,
+        this.params_.options.screenWidth.resolve(ctx.$.expressionContext) ??
+        width,
       screenHeight:
-        this.params_.options.screenHeight ?? this.params_.options.height,
+        this.params_.options.screenHeight.resolve(ctx.$.expressionContext) ??
+        height,
+    });
+  }
+}
+
+export const BaseSetWebGLVendorSchema = ts.node({
+  args: ts.args([ts.expression(ts.string()), ts.expression(ts.string())]),
+});
+
+export type SetWebGLVendorParams = ts.output<typeof BaseSetWebGLVendorSchema>;
+
+export const SetWebGLVendorParser = ts.into(
+  BaseSetWebGLVendorSchema,
+  (v): IAction<SessionContext> => new SetWebGLVendor(v),
+);
+
+export class SetWebGLVendor implements IAction<SessionContext> {
+  constructor(private params_: SetWebGLVendorParams) {}
+
+  async execute(ctx: SessionContext) {
+    const vendor = this.params_.args[0].resolve(ctx.$.expressionContext);
+    const renderer = this.params_.args[1].resolve(ctx.$.expressionContext);
+    await ctx.session.send('Page.addScriptToEvaluateOnNewDocument', {
+      source: `
+      (function() {
+        const wrapped = WebGLRenderingContext.prototype.getParameter;
+        function getParameter(param) {
+          if (param === 37445) return "${vendor}";
+          if (param === 37446) return "${renderer}";
+          return wrapped.apply(this, arguments);
+        }
+
+        Object.defineProperty(WebGLRenderingContext.prototype, 'getParameter', {
+          value: getParameter,
+          configurable: true,
+          enumerable: true,
+          writable: true
+        });
+
+        Object.defineProperty(WebGLRenderingContext.prototype, 'getParameter', {
+          value: getParameter,
+          configurable: true,
+          enumerable: true,
+          writable: true
+        });
+      })();
+      `,
     });
   }
 }

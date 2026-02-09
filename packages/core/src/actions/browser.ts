@@ -52,7 +52,7 @@ export class NewPage implements IAction<BrowserContext> {
       ({ frame }) => {
         if (frame.id === pageSession.mainFrameId) {
           pageSession.currentLoaderId = frame.loaderId;
-          pageSession.clearNodeStack();
+          pageSession.clearDocumentNode();
         }
       },
     );
