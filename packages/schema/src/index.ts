@@ -1,4 +1,5 @@
 export * from './builders/index.js';
+export * from './common.js';
 export * from './error.js';
 export * from './expressions.js';
 export * from './factories.js';
@@ -9,3 +10,4 @@ export * from './registry.js';
 export * from './root.js';
 export * from './slots.js';
 export * from './types/index.js';
+export * from './utils.js';

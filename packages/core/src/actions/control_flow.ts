@@ -7,6 +7,7 @@ import {
 import type { SessionContext } from '../context.js';
 import { Node } from '../node.js';
 import { Runtime } from '../types/index.js';
+import { reduceEvaluators } from '../utils.js';
 
 export const BaseFilterSchema = ts.childrenStruct({
   if: ts.children(ts.anyOf(EvaluatorRegistry)),
@@ -28,10 +29,10 @@ export class Filter implements IAction<SessionContext> {
     if (!activeNode.isCollection)
       throw new Error('filter can only be called on a node collection');
 
-    const predicate = this.params_.if.reduce(
-      (input, evaluator) => evaluator.toJS(input, ctx.$.expressionContext),
-      'e',
-    );
+    const predicate = reduceEvaluators(this.params_.if, {
+      rootInput: 'e',
+      expressionContext: ctx.$.expressionContext,
+    });
     const functionDeclaration = `function() { return this.filter(e => ${predicate}); }`;
     const result = await ctx.session.callFunctionOn(
       functionDeclaration,
@@ -121,13 +122,13 @@ export class Loop implements IAction<SessionContext> {
 
   async execute(ctx: SessionContext) {
     const activeNode = await ctx.session.activeNode();
-    const predicate = this.params_.while.reduce(
-      (input, evaluator) => evaluator.toJS(input, ctx.$.expressionContext),
-      'e',
-    );
+    const predicate = reduceEvaluators(this.params_.while, {
+      rootInput: 'e',
+      expressionContext: ctx.$.expressionContext,
+    });
     const functionBody = activeNode.isCollection
       ? `return this.all(e => ${predicate});`
-      : `const e = this; return ${predicate});`;
+      : `const e = this; return !!(${predicate});`;
     const functionDeclaration = `function() { ${functionBody} }`;
     const params = {
       returnByValue: true,

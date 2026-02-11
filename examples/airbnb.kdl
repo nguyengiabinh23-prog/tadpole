@@ -2,11 +2,8 @@ module airbnb {
   browser_action open {
     new_page {
       goto "https://airbnb.com"
-      parallel {
-        airbnb.maybe_close_dialog
-        wait_for { $ "#bigsearch-query-location-input"; as_boolean }
-      }
-      mouse.natural_move "=jitter(25, 15)" "=jitter(35, 10)"
+      airbnb.maybe_close_dialog
+      wait_for { $ "#bigsearch-query-location-input" }
       slot
     }
   }
@@ -25,22 +22,21 @@ module airbnb {
   action maybe_close_dialog {
     log "Closing dialog if pops up..."
     maybe {
-      wait_for { $ "div[role='dialog']"; as_boolean }
+      wait_for { $ "div[role='dialog']" }
       log "Found dialog, closing..."
       sleep "=random() * 2000"
       $ "div[role='dialog'] button" { click }
+      wait_for { $ "div[role='dialog']"; not }
       log "Closed"
     }
   }
 
   action load_each_page {
-    parallel {
-      airbnb.maybe_close_dialog
-      wait_for { $ "#site-content nav div"; as_boolean }
-    }
+    airbnb.maybe_close_dialog
+    wait_for { $ "#site-content nav div" }
     loop {
       while {
-        $ "#site-content nav div"; child -1; func "(e) => e.tagName === 'A'"
+        $ "#site-content nav div"; child -1; prop tagName; eq A
       }
       do {
         $ "#site-content" { hover }

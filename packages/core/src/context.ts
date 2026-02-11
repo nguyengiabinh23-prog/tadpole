@@ -88,3 +88,8 @@ export interface BrowserContext {
 export interface SessionContext extends BrowserContext {
   session: Session;
 }
+
+export interface EvaluatorContext {
+  rootInput: string;
+  expressionContext: ExpressionContext;
+}
