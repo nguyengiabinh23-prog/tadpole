@@ -44,6 +44,14 @@ export abstract class StructBuilder<
     clone.prefix_ = prefix;
     return clone;
   }
+
+  protected extend_<TExtension extends Record<string, Type<TMemberIn, any>>>(
+    newMembers: TExtension,
+  ): any {
+    const clone = this.clone();
+    Object.assign(clone.members_, newMembers);
+    return clone as any;
+  }
 }
 
 export class DocumentStructBuilder<
@@ -56,6 +64,12 @@ export class DocumentStructBuilder<
 > {
   override build(): DocumentStructType<TMembers> {
     return new DocumentStructType(this.params);
+  }
+
+  extend<TExtension extends Record<string, Type<Node, any>>>(
+    extension: TExtension,
+  ): DocumentStructBuilder<TMembers & TExtension> {
+    return this.extend_(extension);
   }
 }
 
@@ -70,6 +84,12 @@ export class NodeChildrenStructBuilder<
   override build(): NodeChildrenStructType<TMembers> {
     return new NodeChildrenStructType(this.params);
   }
+
+  extend<TExtension extends Record<string, Type<Node, any>>>(
+    extension: TExtension,
+  ): NodeChildrenStructBuilder<TMembers & TExtension> {
+    return this.extend_(extension);
+  }
 }
 
 export class NodePropertiesStructBuilder<
@@ -82,5 +102,11 @@ export class NodePropertiesStructBuilder<
 > {
   override build(): NodePropertiesStructType<TMembers> {
     return new NodePropertiesStructType(this.params);
+  }
+
+  extend<TExtension extends Record<string, Type<Value, any>>>(
+    extension: TExtension,
+  ): NodePropertiesStructBuilder<TMembers & TExtension> {
+    return this.extend_(extension);
   }
 }

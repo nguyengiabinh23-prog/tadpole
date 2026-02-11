@@ -1,6 +1,7 @@
 import * as ts from '@tadpolehq/schema';
 import { EvaluatorRegistry, type IAction } from './base.js';
 import type { SessionContext } from '../context.js';
+import { reduceEvaluators } from '../utils.js';
 
 export const BaseExtractSchema = ts.node({
   args: ts.args([ts.expression(ts.string())]),
@@ -26,11 +27,7 @@ export class Extract implements IAction<SessionContext> {
     const extractMap = Array.from(this.params_.fields.entries())
       .map(
         ([key, { evaluators }]) =>
-          `${key}: ${evaluators.reduce(
-            (input, evaluator) =>
-              evaluator.toJS(input, ctx.$.expressionContext),
-            'e',
-          )}`,
+          `${key}: ${reduceEvaluators(evaluators, { rootInput: 'e', expressionContext: ctx.$.expressionContext })}`,
       )
       .join(',');
     const functionBody = activeNode.isCollection

@@ -7,6 +7,7 @@ import {
 } from './base.js';
 import type { SessionContext } from '../context.js';
 import { Node } from '../node.js';
+import { reduceEvaluators } from '../utils.js';
 
 export const BaseQuerySelectorSchema = ts.node({
   args: ts.args([ts.expression(ts.string())]),
@@ -124,10 +125,10 @@ export class WaitFor implements IAction<SessionContext> {
     if (activeNode.isCollection)
       throw new Error('waitFor cannot be called on a node collection.');
 
-    const predicate = this.params_.predicate.reduce(
-      (input, evaluator) => evaluator.toJS(input, ctx.$.expressionContext),
-      'e',
-    );
+    const predicate = reduceEvaluators(this.params_.predicate, {
+      rootInput: 'e',
+      expressionContext: ctx.$.expressionContext,
+    });
     const timeout = this.params_.options.timeout.resolve(
       ctx.$.expressionContext,
     );
@@ -150,6 +151,8 @@ export class WaitFor implements IAction<SessionContext> {
         });
 
         observer.observe(e, {
+          attributes: true,
+          characterData: true,
           childList: true,
           subtree: true
         })

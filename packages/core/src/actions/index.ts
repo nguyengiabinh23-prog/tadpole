@@ -22,10 +22,22 @@ BrowserActionRegistry.register('new_page', browser.NewPageParser)
   .register('sleep', utils.SleepParser);
 
 EvaluatorRegistry.register('$', evaluators.QuerySelectorParser)
+  .register('and', evaluators.AndParser)
   .register('as_boolean', evaluators.AsBooleanParser)
   .register('attr', evaluators.AttrParser)
   .register('child', evaluators.ChildParser)
+  .register('default', evaluators.DefaultParser)
+  .register('deq', evaluators.DeqParser)
+  .register('dne', evaluators.DneParser)
+  .register('eq', evaluators.EqParser)
+  .register('extract', evaluators.ExtractParser)
   .register('func', evaluators.FuncParser)
+  .register('matches', evaluators.MatchesParser)
+  .register('ne', evaluators.NeParser)
+  .register('not', evaluators.NotParser)
+  .register('or', evaluators.OrParser)
+  .register('prop', evaluators.PropertyParser)
+  .register('root', evaluators.RootParser)
   .register('text', evaluators.InnerTextParser);
 
 SessionActionRegistry.register('$', dom.QuerySelectorParser)
