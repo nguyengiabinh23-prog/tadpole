@@ -6,6 +6,11 @@ import { Aside } from '@astrojs/starlight/components';
 
 This page defines all of the built in evaluators.
 
+<Aside type="note">
+**Short-Circuit Rule:** If a preceding evaluator returns null or undefined, all subsequent evaluators
+in the chain will short-circuit and return undefined immediately. This prevents "Cannot read property of null" errors.
+</Aside>
+
 ## `$`
 Selects a single element using the provided selector.
 
@@ -27,15 +32,16 @@ $ ".element"; and { text; matches "[a-zA-Z]+" }
 ```
 
 ## `as_bool`
-Casts the result of the preceding evaluators into a boolean.
+Casts the result of the preceding evaluators into a boolean. In addition to the falsy values in JavaScript,
+this also treats empty arrays as falsy and the strings provided in `falsyValues` as false.
 
-#### Falsy Values
-`undefined`, `null`, `NaN`, `false`, `0`, empty strings, arrays with a length of zero, and case insensitive
-matches of the strings: `"false"`, `"no"` `"0"` are considered false.
+### Options
+- `falsyValues`: Comma seperated string of values that are considered to be falsy. Defaults to `"false,0,no"`.
 
 ### Usage
 ```kdl
 $ "#element"; as_bool // whether or not element exists
+$ ".passed"; as_bool falsyValues="negative" // custom falsy value
 ```
 
 ## `as_float`
@@ -68,10 +74,6 @@ Gets the value for provided attribute name. The preceding evaluators should retu
 $ ".a"; attr href
 ```
 
-<Aside type="note">
-If the preceding evaluators are null or undefined, it will short circuit and return undefined.
-</Aside>
-
 ## `child`
 Gets the child element at the provided index. Negative indexing is supported. The preceding
 evaluators should return an Element.
@@ -86,10 +88,6 @@ $ "a"; child 1
 // Get the last child
 $ "a"; child -1
 ```
-
-<Aside type="note">
-If the preceding evaluators are null or undefined, it will short circuit and return undefined.
-</Aside>
 
 ## `default`
 Provides a default if the preceding evaluators return null or default.
@@ -166,7 +164,7 @@ Checks if the preceding evalutors match the provided regular expression.
 - `regex`: The regular expression to match against.
 
 ### Options
-- `caseSensitive`: Whether or not for the extraction to be case sensistive. Defaults to `true`.
+- `caseSensitive`: Whether or not for the matching to be case sensistive. Defaults to `true`.
 
 ### Usage
 ```kdl
@@ -186,13 +184,63 @@ $ ".star_count"; ne 0
 ```
 
 ## `not`
-Logical not operator.
+Logical not operator. The preceding evaluators are grouped as the operand.
+
+### Usage
+```kdl
+$ "#is-active"; text; as_bool; not
+```
 
 ## `or`
-Logical or operator.
+Logical or operator. If the preceding evaluator is falsy, it executes and returns the result of the children nodes.
+
+### Usage
+```kdl
+$ ".on-sale"; or { ".title"; matches "sale" caseSensitive=#false }
+```
 
 ## `prop`
+Access the provided property on the result of the preceding evaluators.
+
+### Args
+- `name`: The name of the property to access.
+
+### Usage
+```kdl
+$ "#posts-container"; prop children; prop length
+```
+
+## `replace`
+Replaces the provided pattern (literal string or regex) with provided replacement string.
+
+### Args
+- `pattern`: The pattern to match against. Can be a static string or expression.
+- `replacement`: The replacement value.
+
+### Options
+- `all`: Whether to replace all matches of pattern. Defaults to `false`.
+- `regex`: Whether or not to treat `pattern` as a regular expression. Defaults to `false`.
+- `caseSensitive`: If `regex` is true, whether or not for the pattern match to be case sensistive. Defaults to `true`.
+
+### Usage
+```kdl
+$ ".price"; replace "$" ""
+$ ".price"; replace "[^0-9.]" "" regex=#true
+```
 
 ## `root`
+Resets the evaluation context to the original value/element.
+This allows you to "branch" out and perform multiple independent checks on the same starting data.
+
+### Usage
+```kdl
+$ ".sale-price"; or { root; $ ".price" }
+```
 
 ## `text`
+Gets the inner text of the element.
+
+### Usage
+```kdl
+$ "#bio"; text
+```

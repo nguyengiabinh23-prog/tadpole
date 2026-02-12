@@ -79,25 +79,37 @@ export class And extends BaseBinaryOp {
   protected override op: string = '&&';
 }
 
-export const BaseAsBoolSchema = ts.node({});
+export const AsBoolOptionsSchema = ts.properties({
+  falsyValues: ts.expression(ts.default(ts.string(), 'false,0,no')),
+});
+
+export const BaseAsBoolSchema = ts.node({
+  options: AsBoolOptionsSchema,
+});
+
+export type AsBoolParams = ts.output<typeof BaseAsBoolSchema>;
 
 export const AsBoolParser = ts.into(
   BaseAsBoolSchema,
-  (): IEvaluator => new AsBool(),
+  (v): IEvaluator => new AsBool(v),
 );
 
 export class AsBool implements IEvaluator {
-  constructor() {}
+  constructor(private params_: AsBoolParams) {}
 
-  toJS(input: string): string {
+  toJS(input: string, ctx: EvaluatorContext): string {
+    const falsyValues = JSON.stringify(
+      this.params_.options.falsyValues
+        .resolve(ctx.expressionContext)
+        .split(',')
+        .map((v) => v.trim().toLowerCase()),
+    );
     return `(() => {
       const value = ${input};
       if (!value) return false;
       if (Array.isArray(value)) return value.length > 0;
-      if (typeof value === "string") {
-        const cleaned = value.trim().toLowerCase();
-        if (cleaned === "false" || cleaned === "no" || cleaned === "0") return false;
-      }
+      if (typeof value === "string")
+        return !${falsyValues}.includes(value.trim().toLowerCase());
 
       return true;
     })()`;
@@ -368,6 +380,42 @@ export class QuerySelector implements IEvaluator {
   toJS(input: string, ctx: EvaluatorContext): string {
     const selector = this.params_.args[0].resolve(ctx.expressionContext);
     return `${input}?.querySelector("${selector}")`;
+  }
+}
+
+export const ReplaceOptionsSchema = ts.properties({
+  all: ts.default(ts.boolean(), false),
+  regex: ts.default(ts.boolean(), false),
+  caseSensitive: ts.default(ts.boolean(), true),
+});
+
+export const BaseReplaceSchema = ts.node({
+  args: ts.args([ts.expression(ts.regex), ts.expression(ts.string())]),
+  options: ReplaceOptionsSchema,
+});
+
+export type ReplaceParams = ts.output<typeof BaseReplaceSchema>;
+
+export class Replace implements IEvaluator {
+  constructor(private params_: ReplaceParams) {}
+
+  toJS(input: string, ctx: EvaluatorContext) {
+    let pattern = this.params_.args[0].resolve(ctx.expressionContext);
+    const replacement = JSON.stringify(
+      this.params_.args[1].resolve(ctx.expressionContext),
+    );
+    const method = this.params_.options.all ? 'replaceAll' : 'replace';
+
+    if (this.params_.options.regex) {
+      const flags = [];
+      if (!this.params_.options.caseSensitive) flags.push('i');
+      if (this.params_.options.all) flags.push('g');
+      pattern = `new RegExp(${JSON.stringify(pattern)}, ${JSON.stringify(flags.join(''))})`;
+    } else {
+      pattern = JSON.stringify(pattern);
+    }
+
+    return `${input}?.toString().${method}(${pattern}, ${replacement})`;
   }
 }
 
