@@ -125,7 +125,7 @@ export const AsFloatParser = ts.into(
 
 export class AsFloat implements IEvaluator {
   toJS(input: string) {
-    return `parseFloat(${input}?.toString().replace(/[^0-9-]/g, "") ?? NaN)`;
+    return `parseFloat(${input}?.toString().replace(/[^0-9.-]/g, "") ?? NaN)`;
   }
 }
 
@@ -207,7 +207,7 @@ export class Default implements IEvaluator {
 
   toJS(input: string, ctx: EvaluatorContext) {
     const defaultValue = this.params_.args[0].resolve(ctx.expressionContext);
-    return `(${input}) ?? ${JSON.stringify(defaultValue)}`;
+    return `(${input}) || ${JSON.stringify(defaultValue)}`;
   }
 }
 
