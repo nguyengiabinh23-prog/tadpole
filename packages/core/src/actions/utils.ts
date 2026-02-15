@@ -29,10 +29,18 @@ export class Log implements IAction<BrowserContext> {
   }
 }
 
+export const RandomOptions = ts.properties({
+  weights: ts.into(
+    ts.optional(ts.string().test((v) => /(\s*[0-9]+\s*,?)+(?<!,)/.test(v))),
+    (v) => v?.split(',').map((v) => Number(v.trim())),
+  ),
+});
+
 export function BaseRandomSchema<TCtx>(
   registry: ts.IRegistry<ts.Node, IAction<TCtx>, ts.Type<any, IAction<TCtx>>>,
 ) {
   return ts.node({
+    options: RandomOptions,
     execute: ts.slot(ts.children(ts.anyOf(registry))),
   });
 }
@@ -58,10 +66,29 @@ export class Random<TCtx> implements IAction<TCtx> {
   constructor(private params_: RandomParams<TCtx>) {}
 
   async execute(ctx: TCtx) {
-    const action =
-      this.params_.execute[
-        Math.floor(Math.random() * this.params_.execute.length)
-      ]!;
+    let action: IAction<TCtx>;
+    if (this.params_.options.weights) {
+      const weights = [this.params_.options.weights[0] || 1];
+      for (let i = 1; i < this.params_.execute.length; i++) {
+        weights[i] = (this.params_.options.weights[i] || 1) + weights[i - 1]!;
+      }
+
+      const random = Math.random() * weights.at(-1)!;
+      let i;
+      for (i = 0; i < weights.length; i++) {
+        if (weights[i]! > random) {
+          break;
+        }
+      }
+
+      action = this.params_.execute[i]!;
+    } else {
+      action =
+        this.params_.execute[
+          Math.floor(Math.random() * this.params_.execute.length)
+        ]!;
+    }
+
     await action.execute(ctx);
   }
 }
