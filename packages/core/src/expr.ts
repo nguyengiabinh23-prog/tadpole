@@ -2,6 +2,8 @@ import { ExpressionParser } from '@tadpolehq/schema';
 
 export function extendExpressionParser(parser: ExpressionParser) {
   parser.functions.chance = chance;
+  parser.functions.env = env;
+  parser.functions.format = format;
   parser.functions.gauss = gauss;
   parser.functions.jitter = jitter;
   parser.functions.min_to_ms = min_to_ms;
@@ -11,6 +13,30 @@ export function extendExpressionParser(parser: ExpressionParser) {
 
 export function chance(p: number): boolean {
   return Math.random() < p ? true : false;
+}
+
+export function env(name: string): string | number | boolean | undefined {
+  const value = process.env[name];
+  if (value === undefined) return undefined;
+  if (value === 'true') return true;
+  if (value === 'false') return false;
+
+  if (value.trim() !== '') {
+    const num = Number(value);
+    if (!isNaN(num)) return num;
+  }
+
+  return value;
+}
+
+export function format(str: string, ...args: any[]): string {
+  return str.replace(/{(\d+)}/g, (_match, num) => {
+    const index = parseInt(num);
+    if (args[index] === undefined)
+      throw new Error(`Format is missing arg at index: ${index}`);
+
+    return args[index].toString();
+  });
 }
 
 let cachedGauss: number | null = null;

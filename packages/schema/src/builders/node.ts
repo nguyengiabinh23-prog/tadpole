@@ -34,4 +34,12 @@ export class NodeBuilder<
   override build(): NodeType<TMap> {
     return new NodeType(this.params);
   }
+
+  extend<TExtension extends Record<string, Type<Node, any>>>(
+    extension: TExtension,
+  ): NodeBuilder<TMap & TExtension> {
+    const clone = this.clone();
+    Object.assign(clone.composition_, extension);
+    return clone as any;
+  }
 }

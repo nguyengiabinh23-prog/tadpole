@@ -1,7 +1,7 @@
 import "components/hello.kdl"
 
 main {
-  new_page {
+  hello.open {
     hello.extract_article
   }
 }

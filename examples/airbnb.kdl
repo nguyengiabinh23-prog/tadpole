@@ -1,0 +1,67 @@
+module airbnb {
+  browser_action open {
+    new_page {
+      goto "https://airbnb.com"
+      airbnb.maybe_close_dialog
+      wait_for { $ "#bigsearch-query-location-input" }
+      slot
+    }
+  }
+
+  action search {
+    log "=format('Searching for {0}', text)"
+    $ "#bigsearch-query-location-input" {
+      type "=text" keyboardtype.delay="=random() * 250"
+    }
+    sleep "=random() * 125"
+    $ "[data-testid='structured-search-input-search-button']" {
+      click
+    }
+  }
+
+  action maybe_close_dialog {
+    log "Closing dialog if pops up..."
+    maybe {
+      wait_for { $ "div[role='dialog']" }
+      log "Found dialog, closing..."
+      sleep "=random() * 2000"
+      $ "div[role='dialog'] button" { click }
+      wait_for { $ "div[role='dialog']"; not }
+      log "Closed"
+    }
+  }
+
+  action load_each_page {
+    airbnb.maybe_close_dialog
+    wait_for { $ "#site-content nav div" }
+    loop {
+      do {
+        mouse.natural_move "=jitter(25, 10)" "=jitter(25, 10)"
+        slot
+      }
+      while {
+        $ "#site-content nav div"; child -1; prop tagName; eq A
+      }
+      next {
+        $ "#site-content nav div a:last-of-type" {
+          click delay="=random() * 150" hover.delay="=random() * 100"
+        }
+        sleep "=random() * 5000"
+      }
+    }
+  }
+}
+
+main {
+  airbnb.open {
+    airbnb.search text="Miami, Florida"
+    airbnb.load_each_page {
+      $$ "[itemProp='itemListElement']" {
+        extract "pages[]" {
+          link { $ "a"; attr "href" }
+          price { $ "[data-testid='price-availability-row']"; text }
+        }
+      }
+    }
+  }
+}

@@ -48,7 +48,11 @@ export class RootContext {
           if (!Array.isArray(arr))
             throw new Error(`Path mismatch: ${key} is not an array`);
 
-          arr.push(value);
+          if (Array.isArray(value)) {
+            arr.push(...value);
+          } else {
+            arr.push(value);
+          }
         } else {
           current.set(key, value);
         }
@@ -87,4 +91,9 @@ export interface BrowserContext {
 
 export interface SessionContext extends BrowserContext {
   session: Session;
+}
+
+export interface EvaluatorContext {
+  rootInput: string;
+  expressionContext: ExpressionContext;
 }

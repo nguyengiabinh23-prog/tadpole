@@ -1,6 +1,14 @@
+import "stealth.kdl"
+
 module redfin {
+  browser_action open {
+    new_page {
+      stealth.apply
+      goto "https://redfin.com"
+      slot
+    }
+  }
   action search {
-    goto "https://www.redfin.com"
     $ "#search-box-input" {
       type "=text"
     }

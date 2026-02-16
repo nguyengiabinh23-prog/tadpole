@@ -60,6 +60,7 @@ async function launchChrome(
   fallBackChromePath: string | null,
   windowHeight: number,
   windowWidth: number,
+  proxyServer: string,
 ) {
   const chromePath = (await findChrome()) ?? fallBackChromePath;
   if (chromePath === null)
@@ -75,8 +76,17 @@ async function launchChrome(
     `--remote-debugging-port=${port}`,
     `--user-data-dir=${userDataDir}`,
     `--window-size=${windowWidth},${windowHeight}`,
+    '--disable-blink-features=AutomationControlled',
+    '--use-gl=angle',
   ];
-  if (headless) args.push('--headless');
+  if (headless)
+    args.push(
+      '--headless=new',
+      '--use-angle=swiftshader',
+      '--enable-unsafe-swiftshader',
+    );
+  if (proxyServer)
+    args.push(`--proxy-server=${proxyServer}`, '--use-angle=default');
 
   const child = await spawnAsync(
     chromePath,
@@ -148,6 +158,10 @@ program
     parseInt,
     1920,
   )
+  .option(
+    '--proxy-server <value>',
+    'If --auto is used, the proxy server to use when starting chrome',
+  )
   .action(async (filePath, options) => {
     log.level = options.logLevel;
 
@@ -160,6 +174,7 @@ program
         options.chromeBin ?? null,
         options.windowHeight,
         options.windowWidth,
+        options.proxyServer,
       );
     }
 
@@ -194,7 +209,7 @@ program
     } else {
       log.error(
         `Error parsing definition: ${JSON.stringify(
-          result.error.issue,
+          result.error.flatten(),
           undefined,
           2,
         )}`,
